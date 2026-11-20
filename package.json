@@ -4,8 +4,8 @@
   "description": "This is React Tutorial",
   "scripts": {
     "start": "parcel index.html",
-    "build": "parcel build index.html",
-    "test": "jest"
+    "build": "parcel build index.html --no-cache",
+    "serve": "node server/index.js"
   },
   "author": "Shubham Ojha",
   "license": "ISC",

@@ -1,21 +1,13 @@
-// Footer component for footer section
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { Brand } from './Header';
 
-const Footer = () => {
-    const year = new Date().getFullYear();
-    return (
-        <div className="footer m-1 w-auto text-center px-3 py-5 rounded-md shadow-md">
-            Created By
-            <i className="fa-solid fa-heart px-1 text-sm text-red-600"></i>
-            <a href="#" target="_blank">
-                Shubham Ojha
-            </a>
-            <span className=""> &copy;{year}</span>
-           
-            <strong>
-                Food<span>Hub</span>
-            </strong>
-        </div>
-    );
-};
-
-export default Footer;
+export default function Footer() {
+  return <footer className="site-footer"><div className="footer-inner">
+    <Brand />
+    <nav aria-label="Footer navigation"><Link to="/">Explore</Link><Link to="/about">About</Link><Link to="/contact">Contact</Link><Link to="/grocery">Grocery</Link></nav>
+    <span>© {new Date().getFullYear()} FoodHub · Created by Shubham Ojha<br />
+      Restaurant data from <a className="provider-link" href="https://indiarestros.com/">IndiaRestros</a> · <a className="provider-link" href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>
+    </span>
+  </div></footer>;
+}

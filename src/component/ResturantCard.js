@@ -1,43 +1,31 @@
+import React from 'react';
+import { Link } from 'react-router-dom';
+import { LuHeart, LuMapPin, LuStar } from 'react-icons/lu';
+import { useShop } from '../utils/shop';
+import { money } from '../utils/catalog';
+import FoodPhoto from './FoodPhoto';
 
-import { IMG_CDN_URL } from "../utils/constant"
-
-const RestaurantCard = (props) => {
-    const { resData } = props;
-    const {
-        cloudinaryImageId,
-        name,
-        cuisines,
-        areaName,
-        costForTwoString,
-        avgRating,
-        sla
-    } = resData?.info;
-    return (
-
-        <div className="res-card w-60 cursor-pointer rounded m-5 p-5 transition-transform duration-300 ease-in-out 
-                shadow-md hover:scale-105 hover:shadow-[rgba(112,112,112,0.2)_-1px_5px_15px_5px]">
-            <img className="rounded-lg" src={IMG_CDN_URL + cloudinaryImageId} />
-            <h3 className="my-1 overflow-hidden whitespace-nowrap text-ellipsis text-center">{name}</h3>
-            <h5 className="my-1 overflow-hidden whitespace-nowrap text-ellipsis text-center">{cuisines.join(", ")}</h5>
-            <h6 className="my-1 overflow-hidden whitespace-nowrap text-ellipsis text-center">{areaName}</h6>
-            <h4 className="my-1 overflow-hidden whitespace-nowrap text-ellipsis text-center">{sla.lastMileTravelString}</h4>
-            <h4 className="my-1 overflow-hidden whitespace-nowrap text-ellipsis text-center">{costForTwoString}</h4>
-            <h4 className="my-1 overflow-hidden whitespace-nowrap text-ellipsis text-center">{avgRating}</h4>
+export default function RestaurantCard({ restaurant }) {
+  const { city, saved, toggleSaved } = useShop();
+  const isSaved = saved.includes(`${city}:${restaurant.id}`);
+  return <article className="restaurant-card">
+    <Link className="restaurant-link" to={`/resturant/${restaurant.id}?city=${city}`}>
+      <FoodPhoto image={restaurant.image} />
+      <div className="card-copy">
+        <div className="card-title">
+          <h3>{restaurant.name}</h3>
+          {restaurant.rating != null && <span className="rating"><LuStar aria-hidden="true" /> {restaurant.rating.toFixed(1)}</span>}
         </div>
-    );
-};
-
-// Higher Order Components
-
-export const promtedLabel = (RestaurantCard) => {
-    return (props) => {
-        return (
-            <div>
-                <label className="absolute bg-gray-700 p-1 m-2 rounded-lg text-white">Top Rated</label>
-                <RestaurantCard {...props} />
-            </div>
-        )
-    }
+        {restaurant.cuisines.length > 0 && <p className="card-cuisines">{restaurant.cuisines.join(' · ')}</p>}
+        <div className="card-details">
+          {restaurant.rating != null && <span>Rating from {restaurant.ratingSource}</span>}
+          {restaurant.area && <span><LuMapPin aria-hidden="true" />{restaurant.area}</span>}
+          {restaurant.costForTwo != null && <span className="card-cost">{money(restaurant.costForTwo)} for two</span>}
+        </div>
+      </div>
+    </Link>
+    {restaurant.url && <a className="provider-link card-source" href={restaurant.url}>View on IndiaRestros<span className="visually-hidden"> for {restaurant.name}</span></a>}
+    <button type="button" className={`favorite ${isSaved ? 'is-saved' : ''}`} aria-pressed={isSaved}
+      aria-label={`${isSaved ? 'Unsave' : 'Save'} ${restaurant.name}`} onClick={() => toggleSaved(restaurant.id)}><LuHeart /></button>
+  </article>;
 }
-
-export default RestaurantCard;
