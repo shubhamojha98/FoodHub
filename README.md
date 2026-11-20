@@ -13,6 +13,8 @@ npm start
 
 Parcel prints the local URL. For a production build, run `npm run build` followed by `npm run serve`. The Node server serves the built app and the same food API routes used in development. Set `HOST` and `PORT` when hosting elsewhere.
 
+On Vercel, deploy from the repository root. Vercel serves the Parcel build from `dist` and runs the restaurant and menu endpoints from `api/food/` as Node.js functions. `vercel.json` also handles direct links to pages such as restaurant menus and the bag.
+
 ## How the code fits together
 
 - `src/component/` renders the restaurant list, menu sections, saved restaurants, and bag. Your existing About, Contact, and Grocery pages are still routed through the shared layout.
