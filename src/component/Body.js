@@ -1,116 +1,86 @@
-import React, { useState, useEffect } from "react";
-import RestaurantCard, { promtedLabel } from "./ResturantCard";
-import Shimmer from "./Shimmer";
-import { Link } from "react-router-dom";
-import useOnlineStatus from "../utils/useOnlineStatus";
-import axios from "axios";
+import React, { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { LuHeart, LuSearch, LuStar, LuX } from 'react-icons/lu';
+import { cities } from '../utils/catalog';
+import { useCatalog } from '../utils/catalogClient';
+import { useShop } from '../utils/shop';
+import RestaurantCard from './ResturantCard';
+import CatalogError from './CatalogError';
+import Shimmer from './Shimmer';
 
-const Body = () => {
+export default function Body() {
+  const { city, saved } = useShop();
+  const [params] = useSearchParams();
+  const onlySaved = params.get('view') === 'saved';
+  const { data, error, loading, retry } = useCatalog(city);
+  const [query, setQuery] = useState('');
+  const [cuisine, setCuisine] = useState('');
+  const [topRated, setTopRated] = useState(false);
+  const cuisines = useMemo(() => [...new Set(data?.flatMap(restaurant => restaurant.cuisines))].sort((a, b) => a.localeCompare(b)), [data]);
+  const activeCuisine = cuisines.includes(cuisine) ? cuisine : '';
+  const matches = useMemo(() => {
+    if (!data) return [];
+    if (onlySaved) return data.filter(restaurant => saved.includes(`${city}:${restaurant.id}`));
+    const text = query.trim().toLowerCase();
+    const result = data.filter(restaurant => (
+      (!activeCuisine || restaurant.cuisines.includes(activeCuisine))
+      && [restaurant.name, ...restaurant.cuisines, restaurant.area].some(value => value.toLowerCase().includes(text))
+    ));
+    if (topRated) return result.filter(restaurant => restaurant.rating >= 4.3).sort((a, b) => b.rating - a.rating);
+    return result;
+  }, [data, query, activeCuisine, topRated, onlySaved, saved, city]);
 
-  const [listofResturant, setListOfResturant] = useState([]);
-  const [filteredRestaurant, setFilteredRestaurant] = useState([]);
-  const [searchText, setSearchText] = useState("");
-  const PromotedResCard = promtedLabel(RestaurantCard);
-  useEffect(() => {
-    fetchData();
-  }, []);
+  const showResults = () => document.getElementById('restaurants')?.scrollIntoView({ block: 'start' });
+  const reset = () => { setQuery(''); setCuisine(''); setTopRated(false); };
 
-  const fetchData = async ()=>{
-    try {
-      const response = await axios.get("https://www.swiggy.com/dapi/restaurants/list/v5?lat=28.4929905&lng=77.07241429999999&is-seo-homepage-enabled=true&page_type=DESKTOP_WEB_LISTING")
-      const data = response?.data?.data?.cards[4].card?.card?.gridElements?.infoWithStyle?.restaurants;
-      setListOfResturant(data);
-      setFilteredRestaurant(data);
-    } catch (error) {
-      console.error(error)
-      
-    }
-  }
-
-  // const fetchData = async () => {
-  //   // const data = await fetch(
-  //   //   "https://www.swiggy.com/dapi/restaurants/list/v5?lat=28.4929905&lng=77.07241429999999&is-seo-homepage-enabled=true&page_type=DESKTOP_WEB_LISTING"
-  //   //   // "https://www.swiggy.com/dapi/restaurants/list/v5?lat=23.3440997&lng=85.309562&is-seo-homepage-enabled=true&page_type=DESKTOP_WEB_LISTING"
-  //   // );
-  //   const data =async ()=>{
-  //     await axios.get("https://www.swiggy.com/dapi/restaurants/list/v5?lat=28.4929905&lng=77.07241429999999&is-seo-homepage-enabled=true&page_type=DESKTOP_WEB_LISTING")
-  //   }
-  //   console.log(data);
-
-  //   const json = await data.json();
-  //   //  Optional Chaining
-  //   setListOfResturant(
-  //     json?.data?.cards[4]?.card?.card?.gridElements?.infoWithStyle?.restaurants
-  //   );
-  //   setFilteredRestaurant(
-  //     json?.data?.cards[4]?.card?.card?.gridElements?.infoWithStyle?.restaurants
-  //   );
-  // };
-
-  const filterTopRated = () => {
-    const filteredList = listofResturant?.filter(
-      (res) => res.info.avgRating > 4.3
-    );
-    const sortedList = filteredList?.sort(
-      (a, b) => b.info.avgRating - a.info.avgRating
-    );
-    setFilteredRestaurant(sortedList);
-  };
-  const onlineStatus = useOnlineStatus();
-  if (onlineStatus === false) {
-    return <h1>Your Are Offline</h1>;
-  }
-  return listofResturant.length === 0 ? (
-    <Shimmer />
-  ) : (
-    <>
-      <div className="body">
-        <div className="flex justify-center items-center mt-12 gap-2">
-          <input
-            type="search"
-            className="w-72 p-2 text-base border-2 border-gray-300 rounded focus:border-blue-300
-            transition-all duration-300 ease-in-out"
-            placeholder="Search a restaurant you want..."
-            value={searchText}
-            onChange={(e) => {
-              setSearchText(e.target.value);
-            }}
-          />
-
-          <button
-            className="search-btn text-base px-2 py-2 border-0 rounded bg-blue-600 text-white cursor-pointer
-            transition-colors duration-300 hover:bg-blue-700"
-            onClick={() => {
-              const filteredListByName = listofResturant.filter((res) =>
-                res.data.name.toLowerCase().includes(searchText.toLowerCase())
-              );
-              setFilteredRestaurant(filteredListByName);
-            }}
-          >
-            Search
-          </button>
+  return <>
+    {!onlySaved && <>
+      <section className="hero" aria-labelledby="hero-title">
+        <div className="hero-inner">
+          <p className="eyebrow hero-label">THE LOCAL FOOD GUIDE</p>
+          <h1 id="hero-title">Good food.<br /> <em>Close to home.</em></h1>
+          <p className="hero-description">Find the dishes you love and the neighbourhood kitchens that make them.</p>
+          <form className="hero-search" onSubmit={event => { event.preventDefault(); showResults(); }}>
+            <LuSearch aria-hidden="true" />
+            <input type="search" aria-label="Search restaurants or cuisines" placeholder="Search for food" value={query} onChange={event => setQuery(event.target.value)} />
+            <button type="submit">Find food</button>
+          </form>
         </div>
-        <div className="flex items-center p-4 m-4">
-          <button className="px-3 py-2 rounded-lg bg-gray-400 cursor-pointer" onClick={filterTopRated}>
-            Top Rate Resturant
-          </button>
+      </section>
+      {cuisines.length > 0 && <section className="cuisines" aria-labelledby="cuisine-title">
+        <h2 id="cuisine-title">What are you craving?</h2>
+        <div className="cuisine-list">
+          {cuisines.map(label => <button key={label} type="button" aria-pressed={activeCuisine === label} onClick={() => {
+            setCuisine(current => current === label ? '' : label);
+            showResults();
+          }}>
+            <span>{label}</span>
+          </button>)}
         </div>
-        <div className="w-auto flex flex-auto justify-center flex-wrap">
-          {filteredRestaurant.map((restaurant) => {
-            return (
-              <Link
-                key={restaurant.info.id}
-                to={"/resturant/" + restaurant.info.id}
-              >
-                {restaurant.info.avgRating > 4.3 ? (<PromotedResCard resData={restaurant} />) : (<RestaurantCard resData={restaurant}/>)}
-
-              </Link>
-            );
-          })}
+      </section>}
+    </>}
+    <section id="restaurants" className="restaurants" aria-labelledby="restaurant-title">
+      <div className="section-heading">
+        <div>
+          <p className="eyebrow">{cities[city]}</p>
+          <h2 id="restaurant-title">{onlySaved ? 'Saved restaurants' : 'Restaurants near you'}</h2>
         </div>
+        {!onlySaved && data && <div className="filter-list">
+          {activeCuisine && <button type="button" aria-label={`Clear ${activeCuisine} filter`} onClick={() => setCuisine('')}><LuX />{activeCuisine}</button>}
+          <button type="button" aria-pressed={topRated} onClick={() => setTopRated(current => !current)}><LuStar /> Top rated</button>
+        </div>}
       </div>
-    </>
-  );
-};
-
-export default Body;
+      {error && <CatalogError message="We couldn’t load restaurants from IndiaRestros." onRetry={retry} />}
+      {data && !matches.length && <div className="empty-state">
+        {onlySaved ? <LuHeart /> : <LuSearch />}
+        <h3>{onlySaved ? 'Your favourites will appear here' : 'No matching restaurants'}</h3>
+        <p>{onlySaved ? 'Tap the heart on a restaurant to save it for later.' : 'Try a different search or clear the filters.'}</p>
+        {!onlySaved && <button className="button-solid" onClick={reset}>Clear filters</button>}
+      </div>}
+      {loading && <Shimmer />}
+      {matches.length > 0 && <div className="restaurant-grid">
+        {matches.map(restaurant => <RestaurantCard key={restaurant.id} restaurant={restaurant} />)}
+      </div>}
+    </section>
+  </>;
+}
